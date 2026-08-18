@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#f6efe7" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" />
+  <title>Wild Encounters</title>
+  <style>
+    :root{
+      --bg:#f7f2ec; --card:#fffdf9; --ink:#2f2b28; --muted:#7c746d;
+      --accent:#9c6f4d; --accent2:#d8b79e; --line:#e7ddd3; --done:#5f7f62;
+      --danger:#a34e4e;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:var(--bg); color:var(--ink); padding-bottom:90px;
+    }
+    header{
+      padding:24px 18px 16px; position:sticky; top:0; background:rgba(247,242,236,.94);
+      backdrop-filter:blur(10px); border-bottom:1px solid var(--line); z-index:10;
+    }
+    h1{margin:0 0 4px; font-size:28px}
+    .sub{color:var(--muted); font-size:14px}
+    .wrap{max-width:780px;margin:auto;padding:16px}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+    .stat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;text-align:center}
+    .stat b{display:block;font-size:24px}
+    .progress{height:12px;background:#e9dfd6;border-radius:999px;overflow:hidden;margin:12px 0 18px}
+    .bar{height:100%;background:var(--done);width:0%;transition:.2s}
+    .toolbar{display:grid;grid-template-columns:1fr 130px;gap:10px;margin-bottom:14px}
+    input,select,textarea,button{
+      font:inherit;
+    }
+    input,select,textarea{
+      width:100%;border:1px solid var(--line);background:white;border-radius:14px;
+      padding:12px;color:var(--ink);
+    }
+    button{
+      border:none;border-radius:14px;padding:12px 14px;background:var(--accent);color:white;
+      font-weight:650;
+    }
+    button.secondary{background:#e8ddd2;color:var(--ink)}
+    button.danger{background:var(--danger)}
+    .grid{display:grid;grid-template-columns:1fr;gap:12px}
+    .card{
+      background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px;
+      box-shadow:0 2px 8px rgba(0,0,0,.03);
+    }
+    .cardhead{display:flex;gap:12px;align-items:center}
+    .emoji{font-size:34px;width:44px;text-align:center}
+    .name{font-size:19px;font-weight:750}
+    .goal{font-size:13px;color:var(--muted);margin-top:2px}
+    .badge{margin-left:auto;font-size:12px;padding:6px 9px;border-radius:999px;background:#eee3d8}
+    .badge.done{background:#dbe8dd;color:#39553c}
+    .actions{display:flex;gap:8px;margin-top:12px}
+    .actions button{flex:1}
+    dialog{
+      width:min(94vw,720px);border:none;border-radius:22px;padding:0;background:var(--card);color:var(--ink)
+    }
+    dialog::backdrop{background:rgba(0,0,0,.45)}
+    .modal{padding:18px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    label{font-size:13px;color:var(--muted);display:block;margin:12px 0 5px}
+    .photo-preview{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+    .photo-preview img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;border:1px solid var(--line)}
+    .footer-nav{
+      position:fixed;bottom:0;left:0;right:0;background:rgba(255,253,249,.96);
+      border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+      display:flex;gap:10px;z-index:20
+    }
+    .footer-nav button{flex:1}
+    .empty{text-align:center;color:var(--muted);padding:30px}
+    @media(min-width:650px){.grid{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Wild Encounters</h1>
+  <div class="sub">Your animal bucket list + memory scrapbook</div>
+</header>
+
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><span>Dreams</span><b id="dreams">0</b></div>
+    <div class="stat"><span>Met</span><b id="met">0</b></div>
+    <div class="stat"><span>Progress</span><b id="pct">0%</b></div>
+  </div>
+  <div class="progress"><div id="bar" class="bar"></div></div>
+
+  <div class="toolbar">
+    <input id="search" placeholder="Search animals…" />
+    <select id="filter">
+      <option value="all">All</option>
+      <option value="dream">Dreaming</option>
+      <option value="planned">Planned</option>
+      <option value="done">Met</option>
+    </select>
+  </div>
+
+  <div id="list" class="grid"></div>
+</div>
+
+<div class="footer-nav">
+  <button id="addBtn">+ Add animal</button>
+  <button id="exportBtn" class="secondary">Export backup</button>
+</div>
+
+<dialog id="editor">
+  <div class="modal">
+    <div style="display:flex;align-items:center;gap:10px">
+      <h2 id="modalTitle" style="margin:0;flex:1">Animal</h2>
+      <button id="closeBtn" class="secondary" style="flex:0 0 auto">Close</button>
+    </div>
+
+    <input type="hidden" id="editId">
+
+    <div class="row">
+      <div>
+        <label>Emoji</label>
+        <input id="emoji" maxlength="4" placeholder="🦦">
+      </div>
+      <div>
+        <label>Status</label>
+        <select id="status">
+          <option value="dream">Dreaming</option>
+          <option value="planned">Planned</option>
+          <option value="done">Met!</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Animal</label>
+    <input id="animal" placeholder="Otter">
+
+    <label>Dream interaction</label>
+    <input id="interaction" placeholder="Loose encounter, feed, touch, cuddle...">
+
+    <div class="row">
+      <div>
+        <label>Date</label>
+        <input id="date" type="date">
+      </div>
+      <div>
+        <label>Rating</label>
+        <select id="rating">
+          <option value="">Not rated</option>
+          <option value="5">★★★★★</option>
+          <option value="4">★★★★</option>
+          <option value="3">★★★</option>
+          <option value="2">★★</option>
+          <option value="1">★</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Place</label>
+    <input id="place" placeholder="Zoo, sanctuary, aquarium...">
+
+    <label>Who I went with</label>
+    <input id="withWho" placeholder="Maeve stayed home because apparently zoos have rules">
+
+    <label>Favorite memory</label>
+    <textarea id="memory" rows="4" placeholder="What happened? What did the animal do?"></textarea>
+
+    <label>Photos</label>
+    <input id="photos" type="file" accept="image/*" multiple>
+    <div id="photoPreview" class="photo-preview"></div>
+
+    <div class="actions" style="margin-top:16px">
+      <button id="saveBtn">Save</button>
+      <button id="deleteBtn" class="danger">Delete</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+const seed = [
+['🦒','Giraffe','Hand-feed + touch'],
+['🐘','Elephant','Feed + touch + husbandry/bathing'],
+['🐺','Wolf','Touch + close interaction'],
+['🦁','Big cats','Lion, tiger, leopard, cheetah + more'],
+['🐈','Small wild cats','Serval, caracal, lynx, bobcat + more'],
+['🦦','Otters','Loose interaction; lap contact dream'],
+['🦭','Sea lions / seals','Feed + training + touch'],
+['🐧','Penguins','Feed + direct interaction'],
+['🦈','Sharks','Touch or personally feed'],
+['🐋','Whales','Beluga/whale direct interaction'],
+['🦓','Zebras','Feed at close range'],
+['🐙','Octopus','Direct interaction or feeding'],
+['🦏','Rhinos','Touch + feed'],
+['🦛','Hippos','Feed; pygmy + common hippo goals'],
+['🐫','Camels','Feed + pet'],
+['🦌','Elk','Feed + touch'],
+['🫎','Moose','Feed + close interaction'],
+['🦌','Reindeer','Feed + pet'],
+['🦘','Kangaroos','Walk-through + feed/pet'],
+['🦊','Foxes','Pet + feed + direct interaction']
+];
+
+const KEY='wild_encounters_v1';
+let items = JSON.parse(localStorage.getItem(KEY)||'null');
+if(!items){
+  items = seed.map((x,i)=>({
+    id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+i),
+    emoji:x[0],animal:x[1],interaction:x[2],status:'dream',
+    date:'',rating:'',place:'',withWho:'',memory:'',photos:[]
+  }));
+  saveAll();
+}
+function saveAll(){localStorage.setItem(KEY,JSON.stringify(items));}
+const $=id=>document.getElementById(id);
+
+function render(){
+  const q=$('search').value.toLowerCase().trim();
+  const f=$('filter').value;
+  const filtered=items.filter(x=>{
+    const matches=(x.animal+' '+x.interaction+' '+x.place).toLowerCase().includes(q);
+    const state=f==='all'||x.status===f;
+    return matches&&state;
+  });
+  $('list').innerHTML='';
+  if(!filtered.length){
+    $('list').innerHTML='<div class="empty">No animals here yet.</div>';
+  }
+  filtered.forEach(x=>{
+    const c=document.createElement('div'); c.className='card';
+    const statusLabel=x.status==='done'?'Met ✓':x.status==='planned'?'Planned':'Dream';
+    c.innerHTML=`
+      <div class="cardhead">
+        <div class="emoji">${x.emoji||'🐾'}</div>
+        <div style="min-width:0;flex:1">
+          <div class="name">${escapeHtml(x.animal)}</div>
+          <div class="goal">${escapeHtml(x.interaction||'')}</div>
+        </div>
+        <div class="badge ${x.status==='done'?'done':''}">${statusLabel}</div>
+      </div>
+      ${x.place?`<div class="goal" style="margin-top:10px">📍 ${escapeHtml(x.place)}</div>`:''}
+      ${x.date?`<div class="goal">📅 ${escapeHtml(x.date)}</div>`:''}
+      ${x.rating?`<div class="goal">${'★'.repeat(Number(x.rating))}</div>`:''}
+      ${x.memory?`<div style="margin-top:10px;font-size:14px">${escapeHtml(x.memory).slice(0,140)}${x.memory.length>140?'…':''}</div>`:''}
+      <div class="actions"><button class="open">Open memory</button></div>`;
+    c.querySelector('.open').onclick=()=>openEditor(x.id);
+    $('list').appendChild(c);
+  });
+  const met=items.filter(x=>x.status==='done').length;
+  $('dreams').textContent=items.length;
+  $('met').textContent=met;
+  const pct=items.length?Math.round(met/items.length*100):0;
+  $('pct').textContent=pct+'%';
+  $('bar').style.width=pct+'%';
+}
+
+function escapeHtml(s=''){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+
+function openEditor(id){
+  const x=items.find(a=>a.id===id);
+  $('editId').value=x.id;
+  $('emoji').value=x.emoji||'';
+  $('animal').value=x.animal||'';
+  $('interaction').value=x.interaction||'';
+  $('status').value=x.status||'dream';
+  $('date').value=x.date||'';
+  $('rating').value=x.rating||'';
+  $('place').value=x.place||'';
+  $('withWho').value=x.withWho||'';
+  $('memory').value=x.memory||'';
+  $('modalTitle').textContent=x.animal||'Animal';
+  $('deleteBtn').style.display='inline-block';
+  previewPhotos(x.photos||[]);
+  $('editor').showModal();
+}
+function newAnimal(){
+  $('editId').value='';
+  ['emoji','animal','interaction','date','place','withWho','memory'].forEach(id=>$(id).value='');
+  $('status').value='dream'; $('rating').value='';
+  $('modalTitle').textContent='Add animal';
+  $('deleteBtn').style.display='none';
+  previewPhotos([]);
+  $('editor').showModal();
+}
+function previewPhotos(arr){
+  const box=$('photoPreview');box.innerHTML='';
+  arr.forEach(src=>{const img=document.createElement('img');img.src=src;box.appendChild(img);});
+}
+$('photos').addEventListener('change', async e=>{
+  const files=[...e.target.files].slice(0,6);
+  const data=await Promise.all(files.map(file=>new Promise(res=>{
+    const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file);
+  })));
+  $('photoPreview').innerHTML='';
+  data.forEach(src=>{const img=document.createElement('img');img.src=src;$('photoPreview').appendChild(img);});
+  $('photoPreview').dataset.photos=JSON.stringify(data);
+});
+$('saveBtn').onclick=()=>{
+  const id=$('editId').value;
+  const existing=items.find(a=>a.id===id);
+  const photoData=$('photoPreview').dataset.photos;
+  const photos=photoData?JSON.parse(photoData):(existing?.photos||[]);
+  const obj={
+    id:id||((crypto.randomUUID&&crypto.randomUUID())||String(Date.now())),
+    emoji:$('emoji').value||'🐾',animal:$('animal').value||'Unnamed animal',
+    interaction:$('interaction').value,status:$('status').value,
+    date:$('date').value,rating:$('rating').value,place:$('place').value,
+    withWho:$('withWho').value,memory:$('memory').value,photos
+  };
+  if(existing) Object.assign(existing,obj); else items.push(obj);
+  delete $('photoPreview').dataset.photos;
+  saveAll(); $('editor').close(); render();
+};
+$('deleteBtn').onclick=()=>{
+  const id=$('editId').value;
+  if(confirm('Delete this animal and its memories?')){
+    items=items.filter(x=>x.id!==id);saveAll();$('editor').close();render();
+  }
+};
+$('closeBtn').onclick=()=>{$('editor').close();};
+$('addBtn').onclick=newAnimal;
+$('search').oninput=render;$('filter').onchange=render;
+
+$('exportBtn').onclick=()=>{
+  const blob=new Blob([JSON.stringify(items,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='wild-encounters-backup.json';a.click();URL.revokeObjectURL(a.href);
+};
+
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+render();
+</script>
+</body>
+</html>
