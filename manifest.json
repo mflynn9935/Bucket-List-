@@ -1,11 +1,11 @@
 {
-  "name": "Wild Encounters",
-  "short_name": "Encounters",
+  "name": "Bucket List",
+  "short_name": "Bucket List",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f7f2ec",
-  "theme_color": "#f6efe7",
-  "description": "Animal encounter bucket list and memory scrapbook",
+  "theme_color": "#f5eee7",
+  "description": "A simple bucket list and memory scrapbook.",
   "icons": [
     {
       "src": "icon-192.png",
