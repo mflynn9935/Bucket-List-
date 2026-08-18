@@ -39,7 +39,7 @@ dialog{width:min(94vw,700px);max-height:90vh;overflow:auto;border:0;border-radiu
 </style>
 </head>
 <body>
-<header><div class="head"><div class="title">Bucket List</div><div class="subtitle">Dream it. Book it. Do it. Keep the memory.</div></div></header>
+<header><div class="head"><div class="title">Bucket List</div><div class="subtitle">Dream it. Book it. Do it. Keep the memory. <span style="opacity:.45">v3</span></div></div></header>
 <div class="wrap">
   <div class="status-tabs">
     <button class="tab active" data-status="dream">💭 Dreaming <span id="dreamCount"></span></button>
@@ -225,7 +225,9 @@ $('importFile').onchange=async e=>{
     if(!Array.isArray(incoming))throw Error(); if(confirm('Replace this device’s bucket list with the backup?')){items=incoming;persist();render();alert('Backup restored.')}
   }catch{alert('That backup file could not be read.')}
 };
-if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js?v=3').then(reg=>reg.update()).catch(()=>{});
+}
 render();
 </script>
 </body></html>
